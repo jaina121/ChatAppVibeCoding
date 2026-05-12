@@ -215,7 +215,7 @@ async def get_messages(user_id: Optional[int] = None, search: Optional[str] = No
             "sender_id": m[1],
             "receiver_id": m[2],
             "content": m[3],
-            "created_at": m[4],
+            "created_at": m[4] + "Z",  # Add UTC indicator
             "sender_username": m[5]
         }
         for m in messages
@@ -252,7 +252,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
                 "sender_username": username,
                 "receiver_id": msg_data.get("receiver_id"),
                 "content": msg_data.get("content"),
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat() + "Z"  # Add UTC indicator
             })
     except:
         manager.disconnect(user_id)
