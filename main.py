@@ -8,7 +8,7 @@ import os
 from datetime import datetime
 import sqlite3
 import time
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 # Database initialization
@@ -37,6 +37,19 @@ def init_db():
             FOREIGN KEY (receiver_id) REFERENCES users(id)
         )
     ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS message_reactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            message_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            reaction TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            UNIQUE(message_id, user_id),
+            FOREIGN KEY (message_id) REFERENCES messages(id),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    ''')
     
     conn.commit()
     conn.close()
@@ -61,6 +74,18 @@ class MessageResponse(BaseModel):
     content: str
     created_at: str
     sender_username: str
+    reactions: List["MessageReactionResponse"] = Field(default_factory=list)
+
+
+class MessageReactionResponse(BaseModel):
+    user_id: int
+    reaction: str
+    created_at: int
+
+
+class MessageReactionRequest(BaseModel):
+    user_id: int
+    reaction: str
 
 # WebSocket manager
 class ConnectionManager:
@@ -209,6 +234,26 @@ async def get_messages(user_id: Optional[int] = None, search: Optional[str] = No
         )
     
     messages = cursor.fetchall()
+
+    message_ids = [message[0] for message in messages]
+    reactions_by_message: dict[int, list[dict]] = {}
+
+    if message_ids:
+        placeholders = ",".join("?" for _ in message_ids)
+        cursor.execute(
+            f"""SELECT message_id, user_id, reaction, created_at
+                FROM message_reactions
+                WHERE message_id IN ({placeholders})
+                ORDER BY created_at ASC""",
+            message_ids,
+        )
+        for message_id, reaction_user_id, reaction, created_at in cursor.fetchall():
+            reactions_by_message.setdefault(message_id, []).append({
+                "user_id": reaction_user_id,
+                "reaction": reaction,
+                "created_at": created_at,
+            })
+
     conn.close()
     
     return [
@@ -219,9 +264,84 @@ async def get_messages(user_id: Optional[int] = None, search: Optional[str] = No
             "content": m[3],
             "created_at": int(m[4]),
             "sender_username": m[5]
+            ,"reactions": reactions_by_message.get(m[0], [])
         }
         for m in messages
     ]
+
+
+@app.post("/api/messages/{message_id}/reactions")
+async def react_to_message(message_id: int, reaction_request: MessageReactionRequest):
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM messages WHERE id = ?", (message_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    cursor.execute(
+        "SELECT reaction FROM message_reactions WHERE message_id = ? AND user_id = ?",
+        (message_id, reaction_request.user_id),
+    )
+    existing = cursor.fetchone()
+
+    if existing and existing[0] == reaction_request.reaction:
+        cursor.execute(
+            "DELETE FROM message_reactions WHERE message_id = ? AND user_id = ?",
+            (message_id, reaction_request.user_id),
+        )
+    elif existing:
+        cursor.execute(
+            "UPDATE message_reactions SET reaction = ?, created_at = ? WHERE message_id = ? AND user_id = ?",
+            (reaction_request.reaction, int(time.time() * 1000), message_id, reaction_request.user_id),
+        )
+    else:
+        cursor.execute(
+            "INSERT INTO message_reactions (message_id, user_id, reaction, created_at) VALUES (?, ?, ?, ?)",
+            (message_id, reaction_request.user_id, reaction_request.reaction, int(time.time() * 1000)),
+        )
+
+    conn.commit()
+
+    cursor.execute(
+        """SELECT m.id, m.sender_id, m.receiver_id, m.content, m.created_at, u.username
+           FROM messages m JOIN users u ON m.sender_id = u.id
+           WHERE m.id = ?""",
+        (message_id,),
+    )
+    message = cursor.fetchone()
+
+    cursor.execute(
+        """SELECT user_id, reaction, created_at
+           FROM message_reactions
+           WHERE message_id = ?
+           ORDER BY created_at ASC""",
+        (message_id,),
+    )
+    reactions = [
+        {"user_id": row[0], "reaction": row[1], "created_at": row[2]}
+        for row in cursor.fetchall()
+    ]
+    conn.close()
+
+    if message:
+        await manager.broadcast({
+            "type": "reaction",
+            "message_id": message_id,
+        })
+
+        return {
+            "id": message[0],
+            "sender_id": message[1],
+            "receiver_id": message[2],
+            "content": message[3],
+            "created_at": int(message[4]),
+            "sender_username": message[5],
+            "reactions": reactions,
+        }
+
+    raise HTTPException(status_code=500, detail="Failed to update reaction")
 
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):

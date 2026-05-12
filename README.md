@@ -58,7 +58,7 @@ A modern, real-time chat application built with Python FastAPI and vanilla JavaS
 - **Frontend:** HTML5, CSS3, Vanilla JavaScript
 - **Database:** SQLite
 - **Real-time:** WebSockets
-- **Deployment:** Docker, Cloud platforms (Render, Railway, etc.)
+- **Deployment:** Docker, Cloud platforms (Render )
 
 ## 📦 Project Structure
 
@@ -83,7 +83,7 @@ chatapp/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/chatapp.git
+   git clone https://github.com/jaina121/ChattVibeCoding.git
    cd chatapp
    ```
 
@@ -148,9 +148,7 @@ chatapp/
 
 ## 📹 Demo Video
 
-Watch the full demo: [YouTube Demo Video](https://UPDATE_WITH_YOUR_YOUTUBE_LINK)
-
-> For recording instructions, see [DEMO_VIDEO_GUIDE.md](DEMO_VIDEO_GUIDE.md)
+Watch the full demo: [YouTube Demo Video](https://youtu.be/-YMsUIBJCzU?si=FInptYDWa7PwcPs_)
 
 Features shown:
 - User registration and login
@@ -222,41 +220,17 @@ See `requirements.txt`:
 ### Deploy to Render
 
 1. Push to GitHub
-2. Go to [render.com](https://render.com)
+2. Go to [render.com]( https://render.com/docs/web-services#port-binding)
 3. Create new Web Service
 4. Connect your GitHub repository
 5. Set Build command: `pip install -r requirements.txt`
 6. Set Start command: `uvicorn main:app --host 0.0.0.0 --port 8000`
 7. Deploy!
 
-### Deploy to Railway
-
-1. Push to GitHub
-2. Go to [railway.app](https://railway.app)
-3. Create new Project
-4. Connect GitHub repository
-5. Railway auto-detects and deploys
-6. Get live URL
-
-### Deploy to PythonAnywhere
-
-1. Upload files
-2. Create new web app
-3. Configure WSGI settings
-4. Run `pip install -r requirements.txt`
-5. Set startup commands
-
-## 🤝 Contributing
-
-Feel free to fork, modify, and improve!
-
-## 📄 License
-
-MIT License - feel free to use this project
 
 ## 👨‍💻 Author
 
-Built for Vibe Coding Final Project
+Built for Vibe Coding Final Project Joodonbek kyzy Jainagyl
 
 ---
 

@@ -11,9 +11,61 @@
             box-sizing: border-box;
         }
 
+        :root {
+            color-scheme: light;
+            --page-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --surface: #ffffff;
+            --surface-2: #f9f9f9;
+            --sidebar-bg: #f5f5f5;
+            --text-main: #1f2937;
+            --text-soft: #666666;
+            --border-color: #dddddd;
+            --input-bg: #ffffff;
+            --input-border: #dddddd;
+            --accent: #667eea;
+            --accent-2: #764ba2;
+            --accent-contrast: #ffffff;
+            --message-incoming: #e8e8e8;
+            --message-incoming-text: #333333;
+            --status-online-bg: #d4edda;
+            --status-online-text: #155724;
+            --status-offline-bg: #f8d7da;
+            --status-offline-text: #721c24;
+            --scrollbar-track: #f1f1f1;
+            --scrollbar-thumb: #888888;
+            --scrollbar-thumb-hover: #555555;
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        :root[data-theme='dark'] {
+            color-scheme: dark;
+            --page-bg: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+            --surface: #111827;
+            --surface-2: #0f172a;
+            --sidebar-bg: #0b1220;
+            --text-main: #f3f4f6;
+            --text-soft: #9ca3af;
+            --border-color: #243244;
+            --input-bg: #0f172a;
+            --input-border: #243244;
+            --accent: #7c8cff;
+            --accent-2: #9b7cff;
+            --accent-contrast: #ffffff;
+            --message-incoming: #1f2937;
+            --message-incoming-text: #e5e7eb;
+            --status-online-bg: #123222;
+            --status-online-text: #8ee0a4;
+            --status-offline-bg: #341b22;
+            --status-offline-text: #ffb0ba;
+            --scrollbar-track: #0f172a;
+            --scrollbar-thumb: #4b5563;
+            --scrollbar-thumb-hover: #6b7280;
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--page-bg);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -26,16 +78,16 @@
             width: 100%;
             max-width: 1200px;
             height: 90vh;
-            background: white;
+            background: var(--surface);
             border-radius: 10px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: var(--shadow);
             overflow: hidden;
         }
 
         .sidebar {
             width: 300px;
-            background: #f5f5f5;
-            border-right: 1px solid #ddd;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -43,13 +95,41 @@
 
         .sidebar-header {
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
             color: white;
         }
 
+        .sidebar-header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
         .sidebar-header h2 {
-            margin-bottom: 10px;
+            margin-bottom: 0;
             font-size: 18px;
+        }
+
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.18);
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.28);
         }
 
         .register-form {
@@ -63,12 +143,14 @@
             border: none;
             border-radius: 5px;
             font-size: 12px;
+            background: var(--input-bg);
+            color: var(--text-main);
         }
 
         .register-form button {
             padding: 8px 15px;
-            background: white;
-            color: #667eea;
+            background: var(--surface);
+            color: var(--accent);
             border: none;
             border-radius: 5px;
             cursor: pointer;
@@ -77,14 +159,14 @@
         }
 
         .register-form button:hover {
-            background: #f0f0f0;
+            background: var(--surface-2);
         }
 
         /* Login/Logout Styles */
         .user-session {
             padding: 15px;
-            background: #f5f5f5;
-            border-bottom: 1px solid #ddd;
+            background: var(--sidebar-bg);
+            border-bottom: 1px solid var(--border-color);
             display: none;
             flex-direction: column;
             gap: 10px;
@@ -96,7 +178,7 @@
 
         .user-info {
             padding: 10px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
             color: white;
             border-radius: 5px;
             text-align: center;
@@ -125,8 +207,8 @@
             flex-direction: column;
             gap: 10px;
             padding: 15px;
-            background: white;
-            border-bottom: 1px solid #ddd;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border-color);
         }
 
         .login-form.hidden {
@@ -135,15 +217,17 @@
 
         .login-form input {
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--input-border);
             border-radius: 5px;
             font-size: 13px;
+            background: var(--input-bg);
+            color: var(--text-main);
         }
 
         .login-form button {
             padding: 10px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+            color: var(--accent-contrast);
             border: none;
             border-radius: 5px;
             cursor: pointer;
@@ -158,22 +242,24 @@
 
         .form-hint {
             font-size: 11px;
-            color: #666;
+            color: var(--text-soft);
             text-align: center;
             margin-top: -5px;
         }
 
         .search-box {
             padding: 10px;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .search-box input {
             width: 100%;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--input-border);
             border-radius: 5px;
             font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text-main);
         }
 
         .users-list {
@@ -185,38 +271,39 @@
         .user-item {
             padding: 12px;
             margin: 5px 0;
-            background: white;
+            background: var(--surface);
             border-radius: 5px;
             cursor: pointer;
             transition: all 0.2s;
             border-left: 3px solid transparent;
+            color: var(--text-main);
         }
 
         .user-item:hover {
-            background: #e8e8e8;
+            background: var(--surface-2);
         }
 
         .user-item.active {
-            background: #667eea;
+            background: var(--accent);
             color: white;
-            border-left-color: #764ba2;
+            border-left-color: var(--accent-2);
         }
 
         .main-chat {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: white;
+            background: var(--surface);
         }
 
         .chat-header {
             padding: 20px;
-            border-bottom: 1px solid #ddd;
-            background: #f9f9f9;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--surface-2);
         }
 
         .chat-header h3 {
-            color: #333;
+            color: var(--text-main);
             font-size: 18px;
         }
 
@@ -224,7 +311,7 @@
             flex: 1;
             overflow-y: auto;
             padding: 20px;
-            background: white;
+            background: var(--surface);
         }
 
         .message {
@@ -236,15 +323,15 @@
         }
 
         .message.sent {
-            background: #667eea;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
             color: white;
             margin-left: auto;
             border-bottom-right-radius: 0;
         }
 
         .message.received {
-            background: #e8e8e8;
-            color: #333;
+            background: var(--message-incoming);
+            color: var(--message-incoming-text);
             margin-right: auto;
             border-bottom-left-radius: 0;
         }
@@ -262,10 +349,105 @@
             margin-top: 5px;
         }
 
+        .message-reactions {
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .reaction-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .reaction-button {
+            border: 1px solid var(--border-color);
+            background: var(--surface);
+            color: var(--text-main);
+            border-radius: 999px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            line-height: 1;
+            transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .reaction-button:hover {
+            transform: translateY(-1px);
+            border-color: var(--accent);
+        }
+
+        .reaction-button.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .reaction-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .reaction-pill {
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: rgba(127, 127, 127, 0.12);
+        }
+
+        .reaction-picker {
+            position: fixed;
+            z-index: 50;
+            display: none;
+            gap: 6px;
+            padding: 8px 10px;
+            border-radius: 999px;
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+        }
+
+        .reaction-picker.open {
+            display: flex;
+        }
+
+        .reaction-picker .reaction-button {
+            min-width: 34px;
+            height: 34px;
+            padding: 0 8px;
+            border-radius: 999px;
+            font-size: 16px;
+        }
+
+        .message {
+            position: relative;
+            cursor: default;
+        }
+
+        .message.hint::after {
+            content: 'Double click to react';
+            position: absolute;
+            top: -18px;
+            right: 10px;
+            font-size: 10px;
+            color: var(--text-soft);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+
+        .message:hover.hint::after {
+            opacity: 1;
+        }
+
         .chat-input {
             padding: 20px;
-            border-top: 1px solid #ddd;
-            background: #f9f9f9;
+            border-top: 1px solid var(--border-color);
+            background: var(--surface-2);
             display: flex;
             gap: 10px;
         }
@@ -273,15 +455,17 @@
         .chat-input input {
             flex: 1;
             padding: 12px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--input-border);
             border-radius: 5px;
             font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text-main);
         }
 
         .chat-input button {
             padding: 12px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+            color: var(--accent-contrast);
             border: none;
             border-radius: 5px;
             cursor: pointer;
@@ -298,7 +482,7 @@
             justify-content: center;
             align-items: center;
             height: 100%;
-            color: #999;
+            color: var(--text-soft);
             font-size: 18px;
         }
 
@@ -306,18 +490,18 @@
             padding: 10px;
             text-align: center;
             font-size: 12px;
-            color: #666;
-            border-top: 1px solid #ddd;
+            color: var(--text-soft);
+            border-top: 1px solid var(--border-color);
         }
 
         .status.online {
-            background: #d4edda;
-            color: #155724;
+            background: var(--status-online-bg);
+            color: var(--status-online-text);
         }
 
         .status.offline {
-            background: #f8d7da;
-            color: #721c24;
+            background: var(--status-offline-bg);
+            color: var(--status-offline-text);
         }
 
         @media (max-width: 768px) {
@@ -349,16 +533,16 @@
         }
 
         ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: var(--scrollbar-track);
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #888;
+            background: var(--scrollbar-thumb);
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #555;
+            background: var(--scrollbar-thumb-hover);
         }
     </style>
 </head>
@@ -366,7 +550,10 @@
     <div class="container">
         <div class="sidebar">
             <div class="sidebar-header">
-                <h2>💬 ChatApp</h2>
+                <div class="sidebar-header-inner">
+                    <h2>💬 ChatApp</h2>
+                    <button type="button" class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button>
+                </div>
             </div>
             
             <!-- Login Section - Shows when not logged in -->
@@ -411,9 +598,38 @@
         let ws = null;
         const apiBase = window.location.origin;
         const conversationCacheKey = 'chatappConversationHistory';
+        const themeStorageKey = 'chatappTheme';
+        const reactionOptions = ['👍', '❤️', '😂', '😮', '🔥'];
+        let activeReactionPicker = null;
+        let activeReactionMessageId = null;
+
+        function applyTheme(theme) {
+            const resolvedTheme = theme === 'dark' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', resolvedTheme);
+            localStorage.setItem(themeStorageKey, resolvedTheme);
+
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.textContent = resolvedTheme === 'dark' ? '☀️' : '🌙';
+                themeToggle.title = resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        }
+
+        function restoreTheme() {
+            const savedTheme = localStorage.getItem(themeStorageKey);
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            applyTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+        }
 
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', () => {
+            restoreTheme();
+
             // Try to restore session from localStorage
             restoreSession();
             
@@ -484,16 +700,130 @@
                     receiver_id: message.receiver_id,
                     content: message.content,
                     created_at: message.created_at || message.timestamp,
-                    sender_username: message.sender_username
+                    sender_username: message.sender_username,
+                    reactions: message.reactions || []
                 });
                 saveConversationCache(cache);
             }
+        }
+
+        function getMessageDedupKey(message) {
+            return message.id != null
+                ? `id:${message.id}`
+                : `fallback:${message.sender_id}_${message.receiver_id}_${message.created_at || message.timestamp}_${message.content}`;
         }
 
         function renderConversationMessages(messages) {
             const container = document.getElementById('messages-container');
             container.innerHTML = '';
             messages.forEach((msg) => displayMessage(msg, true));
+        }
+
+        function ensureReactionPicker() {
+            let picker = document.getElementById('reaction-picker');
+            if (picker) {
+                return picker;
+            }
+
+            picker = document.createElement('div');
+            picker.id = 'reaction-picker';
+            picker.className = 'reaction-picker';
+            document.body.appendChild(picker);
+
+            document.addEventListener('click', (event) => {
+                if (activeReactionPicker && !activeReactionPicker.contains(event.target)) {
+                    closeReactionPicker();
+                }
+            });
+
+            window.addEventListener('scroll', () => closeReactionPicker(), true);
+            window.addEventListener('resize', () => closeReactionPicker());
+            return picker;
+        }
+
+        function closeReactionPicker() {
+            if (activeReactionPicker) {
+                activeReactionPicker.classList.remove('open');
+            }
+
+            activeReactionPicker = null;
+            activeReactionMessageId = null;
+        }
+
+        function openReactionPicker(messageElement, messageId, currentReaction = null) {
+            if (!messageId) {
+                return;
+            }
+
+            const picker = ensureReactionPicker();
+            picker.innerHTML = reactionOptions.map((reaction) => `
+                <button type="button" class="reaction-button ${currentReaction === reaction ? 'active' : ''}" onclick="reactToMessage(${messageId}, '${reaction}')">${reaction}</button>
+            `).join('');
+
+            const rect = messageElement.getBoundingClientRect();
+            const pickerWidth = 260;
+            const pickerHeight = 52;
+            const top = Math.max(12, rect.top - pickerHeight - 10);
+            const left = Math.min(window.innerWidth - pickerWidth - 12, Math.max(12, rect.left + rect.width / 2 - pickerWidth / 2));
+
+            picker.style.top = `${top}px`;
+            picker.style.left = `${left}px`;
+            picker.classList.add('open');
+            activeReactionPicker = picker;
+            activeReactionMessageId = messageId;
+        }
+
+        function groupReactions(reactions) {
+            const grouped = {};
+            (reactions || []).forEach((reaction) => {
+                grouped[reaction.reaction] = grouped[reaction.reaction] || [];
+                grouped[reaction.reaction].push(reaction);
+            });
+            return grouped;
+        }
+
+        function getCurrentUserReaction(reactions) {
+            const mine = (reactions || []).find((reaction) => reaction.user_id === currentUser?.id);
+            return mine ? mine.reaction : null;
+        }
+
+        function renderReactionSummary(reactions) {
+            if (!reactions || !reactions.length) {
+                return '';
+            }
+
+            const grouped = groupReactions(reactions);
+            return Object.entries(grouped)
+                .map(([reaction, items]) => `<span class="reaction-pill">${reaction} ${items.length}</span>`)
+                .join('');
+        }
+
+        async function reactToMessage(messageId, reaction) {
+            if (!currentUser || !messageId) return;
+
+            try {
+                closeReactionPicker();
+                const response = await fetch(`${apiBase}/api/messages/${messageId}/reactions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentUser.id,
+                        reaction
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to add reaction');
+                }
+
+                if (selectedUser) {
+                    await selectUser(selectedUser);
+                }
+            } catch (error) {
+                console.error('Error reacting to message:', error);
+                alert('Could not add reaction: ' + error.message);
+            }
         }
 
         // Show login form
@@ -607,6 +937,8 @@
                         // Message for another conversation — ignore or handle notifications here
                         console.log('WS message for other conversation; ignoring in current view.', data);
                     }
+                } else if (data.type === 'reaction' && selectedUser) {
+                    selectUser(selectedUser);
                 }
             };
             
@@ -643,6 +975,7 @@
         // Select user for chat
         async function selectUser(user) {
             selectedUser = user;
+            closeReactionPicker();
             document.getElementById('chat-title').textContent = `Chat with ${user.username}`;
             document.getElementById('input-section').style.display = 'flex';
             const conversationKey = getConversationKey(currentUser.id, user.id);
@@ -664,14 +997,24 @@
                 messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
                 const conversationMessages = [];
+                const mergedMessages = new Map();
+
+                cachedMessages.forEach((msg) => {
+                    mergedMessages.set(getMessageDedupKey(msg), msg);
+                });
 
                 messages.forEach(msg => {
                     if ((msg.sender_id === currentUser.id && msg.receiver_id === user.id) ||
                         (msg.sender_id === user.id && msg.receiver_id === currentUser.id)) {
                         conversationMessages.push(msg);
-                        displayMessage(msg, true);
+                        mergedMessages.set(getMessageDedupKey(msg), msg);
                     }
                 });
+
+                document.getElementById('messages-container').innerHTML = '';
+                Array.from(mergedMessages.values())
+                    .sort((a, b) => Number(a.created_at || a.timestamp) - Number(b.created_at || b.timestamp))
+                    .forEach((msg) => displayMessage(msg, true));
 
                 cache[conversationKey] = conversationMessages;
                 saveConversationCache(cache);
@@ -701,14 +1044,31 @@
             const div = document.createElement('div');
             
             const isSent = msg.sender_id === currentUser.id;
-            div.className = `message ${isSent ? 'sent' : 'received'}`;
+            const reactions = Array.isArray(msg.reactions) ? msg.reactions : [];
+            const myReaction = getCurrentUserReaction(reactions);
+            const messageId = msg.id ? Number(msg.id) : null;
+            div.className = `message ${isSent ? 'sent' : 'received'} ${messageId ? 'hint' : ''}`;
+            if (messageId) {
+                div.dataset.messageId = String(messageId);
+            }
             
             const time = formatMessageTime(msg.created_at || msg.timestamp);
             div.innerHTML = `
                 <div class="message-sender">${msg.sender_username}</div>
-                ${msg.content}
+                <div class="message-text">${msg.content}</div>
                 <div class="message-time">${time}</div>
+                <div class="message-reactions">
+                    <div class="reaction-summary">${renderReactionSummary(reactions)}</div>
+                </div>
             `;
+
+            if (messageId) {
+                div.addEventListener('dblclick', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openReactionPicker(div, messageId, myReaction);
+                });
+            }
             
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
