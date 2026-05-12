@@ -85,6 +85,10 @@ https://chatapp-abc123.onrender.com
    - Phone screen recording
 3. **Show this:**
    - Register 2 users
+            - Demonstrate login + logout (show session persistence):
+               - Log in as user A, send a message
+               - Refresh the page to show session restore
+               - Logout and log in as user B to show account switching
    - Send a message from one to another
    - Show message appearing on both screens
    - Say what the app does

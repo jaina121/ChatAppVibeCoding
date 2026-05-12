@@ -28,6 +28,15 @@ A modern, real-time chat application built with Python FastAPI and vanilla JavaS
   - Beautiful gradient UI with dark/light message bubbles
   - Online/offline status indicator
 
+### 🔐 Session & Authentication Improvements (NEW)
+
+- **Login for existing users:** Single auth form now supports logging in existing accounts via `POST /api/users/login`.
+- **Smart register/login flow:** The auth form tries to `login` first and falls back to `register` automatically if the user does not exist.
+- **Logout:** Clear session with a visible logout button; closes the WebSocket and clears `localStorage`.
+- **Session persistence:** Browser `localStorage` preserves the logged-in user; the app auto-restores the session on page reload.
+- **Account switching:** Logout and login as a different user without losing other users' chat history (history is stored in the DB).
+- **Client-side filtering:** Incoming WebSocket messages are shown only when they belong to the currently open conversation (prevents message interleaving in the UI).
+
 - **Backend**
   - FastAPI Python backend
   - RESTful API endpoints
@@ -99,6 +108,11 @@ chatapp/
    http://localhost:8000
    ```
 
+### Authentication Notes
+
+- The login form accepts a single `username`. If the username exists, the server returns the user and the client logs in. If the username does not exist, the client automatically registers the username and logs in.
+- Sessions are stored locally in `localStorage` under the key `chatappUser`. To fully logout, click the **Logout** button in the sidebar — this closes the WebSocket connection and clears the local session.
+
 ### Using Docker
 
 1. **Build the image**
@@ -116,6 +130,7 @@ chatapp/
 ### User Management
 - `POST /api/users/register` - Register a new user
 - `GET /api/users` - Get all users (supports ?search=query)
+ - `POST /api/users/login` - Login existing user (returns 401 if not found)
 
 ### Messaging
 - `POST /api/messages` - Send a message
