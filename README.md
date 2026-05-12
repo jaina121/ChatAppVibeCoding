@@ -130,7 +130,7 @@ chatapp/
 ### User Management
 - `POST /api/users/register` - Register a new user
 - `GET /api/users` - Get all users (supports ?search=query)
- - `POST /api/users/login` - Login existing user (returns 401 if not found)
+- `POST /api/users/login` - Login existing user (returns 401 if not found)
 
 ### Messaging
 - `POST /api/messages` - Send a message
