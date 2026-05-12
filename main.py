@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 import sqlite3
 import time
 from pydantic import BaseModel
@@ -32,7 +32,7 @@ def init_db():
             sender_id INTEGER NOT NULL,
             receiver_id INTEGER,
             content TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at INTEGER NOT NULL,
             FOREIGN KEY (sender_id) REFERENCES users(id),
             FOREIGN KEY (receiver_id) REFERENCES users(id)
         )
@@ -162,10 +162,11 @@ async def get_users(search: Optional[str] = Query(None)):
 async def send_message(sender_id: int, message: Message):
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
+    timestamp_ms = int(time.time() * 1000)
     
     cursor.execute(
-        "INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
-        (sender_id, message.receiver_id, message.content)
+        "INSERT INTO messages (sender_id, receiver_id, content, created_at) VALUES (?, ?, ?, ?)",
+        (sender_id, message.receiver_id, message.content, timestamp_ms)
     )
     conn.commit()
     msg_id = cursor.lastrowid
@@ -183,7 +184,7 @@ async def send_message(sender_id: int, message: Message):
         "sender_username": sender,
         "receiver_id": message.receiver_id,
         "content": message.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": timestamp_ms
     })
     
     return {"status": "ok", "message_id": msg_id}
@@ -213,13 +214,21 @@ async def get_messages(user_id: Optional[int] = None, search: Optional[str] = No
     # Convert DB timestamp to Unix timestamp in milliseconds
     result = []
     for m in messages:
-        # Parse the ISO format timestamp from SQLite and convert to Unix timestamp (ms)
-        try:
-            dt = datetime.fromisoformat(m[4])
-            timestamp_ms = int(dt.timestamp() * 1000)
-        except:
-            # Fallback: use current time if parsing fails
-            timestamp_ms = int(time.time() * 1000)
+        raw_created_at = m[4]
+
+        if isinstance(raw_created_at, int):
+            timestamp_ms = raw_created_at
+        else:
+            try:
+                # Handle legacy string timestamps stored before the fix
+                dt = datetime.strptime(raw_created_at, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+                timestamp_ms = int(dt.timestamp() * 1000)
+            except:
+                try:
+                    dt = datetime.fromisoformat(str(raw_created_at).replace("Z", "+00:00"))
+                    timestamp_ms = int(dt.timestamp() * 1000)
+                except:
+                    timestamp_ms = int(time.time() * 1000)
         
         result.append({
             "id": m[0],
@@ -242,9 +251,10 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
             # Save message to database
             conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
+            timestamp_ms = int(time.time() * 1000)
             cursor.execute(
-                "INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
-                (user_id, msg_data.get("receiver_id"), msg_data.get("content"))
+                "INSERT INTO messages (sender_id, receiver_id, content, created_at) VALUES (?, ?, ?, ?)",
+                (user_id, msg_data.get("receiver_id"), msg_data.get("content"), timestamp_ms)
             )
             conn.commit()
             conn.close()
@@ -255,9 +265,6 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
             cursor.execute("SELECT username FROM users WHERE id = ?", (user_id,))
             username = cursor.fetchone()[0]
             conn.close()
-            
-            # Use Unix timestamp in milliseconds (timezone-independent)
-            timestamp_ms = int(time.time() * 1000)
             
             await manager.broadcast({
                 "type": "message",
