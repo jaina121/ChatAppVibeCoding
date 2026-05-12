@@ -2,6 +2,8 @@
 
 A modern, real-time chat application built with Python FastAPI and vanilla JavaScript. Features real-time messaging, user management, and a beautiful responsive UI.
 
+> **⏱️ Quick Submission?** See [QUICKSTART.md](QUICKSTART.md) for a 30-minute path to deployment!
+
 ## 🎯 Features
 
 ### ✅ Core Features
@@ -125,11 +127,15 @@ chatapp/
 
 ## 🌍 Live Demo
 
-**Live Website:** [https://chatapp-demo.onrender.com](https://chatapp-demo.onrender.com)
+**Live Website:** [UPDATE_THIS_WITH_YOUR_RENDER_URL](https://render.com)
+
+> Get your Render URL from the [QUICKSTART.md](QUICKSTART.md) - Step 4
 
 ## 📹 Demo Video
 
-Watch the full demo: [YouTube Demo Video](https://youtu.be/your-demo-video-link)
+Watch the full demo: [YouTube Demo Video](https://UPDATE_WITH_YOUR_YOUTUBE_LINK)
+
+> For recording instructions, see [DEMO_VIDEO_GUIDE.md](DEMO_VIDEO_GUIDE.md)
 
 Features shown:
 - User registration and login
