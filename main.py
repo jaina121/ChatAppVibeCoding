@@ -189,10 +189,11 @@ async def get_users(search: Optional[str] = Query(None)):
 async def send_message(sender_id: int, message: Message):
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
+    timestamp_ms = int(time.time() * 1000)
     
     cursor.execute(
-        "INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
-        (sender_id, message.receiver_id, message.content)
+        "INSERT INTO messages (sender_id, receiver_id, content, created_at) VALUES (?, ?, ?, ?)",
+        (sender_id, message.receiver_id, message.content, timestamp_ms)
     )
     conn.commit()
     msg_id = cursor.lastrowid
@@ -210,7 +211,7 @@ async def send_message(sender_id: int, message: Message):
         "sender_username": sender,
         "receiver_id": message.receiver_id,
         "content": message.content,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": timestamp_ms
     })
     
     return {"status": "ok", "message_id": msg_id}
@@ -355,11 +356,13 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
             # Save message to database
             conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
+            timestamp_ms = int(time.time() * 1000)
             cursor.execute(
-                "INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
-                (user_id, msg_data.get("receiver_id"), msg_data.get("content"))
+                "INSERT INTO messages (sender_id, receiver_id, content, created_at) VALUES (?, ?, ?, ?)",
+                (user_id, msg_data.get("receiver_id"), msg_data.get("content"), timestamp_ms)
             )
             conn.commit()
+            msg_id = cursor.lastrowid
             conn.close()
             
             # Broadcast
@@ -371,11 +374,12 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
             
             await manager.broadcast({
                 "type": "message",
+                "id": msg_id,
                 "sender_id": user_id,
                 "sender_username": username,
                 "receiver_id": msg_data.get("receiver_id"),
                 "content": msg_data.get("content"),
-                "timestamp": datetime.now().isoformat()
+                "timestamp": timestamp_ms
             })
     except:
         manager.disconnect(user_id)

@@ -596,6 +596,7 @@
         let currentUser = null;
         let selectedUser = null;
         let ws = null;
+        let wsReconnectTimer = null;
         const apiBase = window.location.origin;
         const conversationCacheKey = 'chatappConversationHistory';
         const themeStorageKey = 'chatappTheme';
@@ -899,6 +900,10 @@
 
         // Logout user
         function logoutUser() {
+            if (wsReconnectTimer) {
+                clearTimeout(wsReconnectTimer);
+                wsReconnectTimer = null;
+            }
             if (ws) {
                 ws.close();
                 ws = null;
@@ -918,9 +923,16 @@
         // Connect WebSocket
         function connectWebSocket() {
             if (!currentUser) return;
+
+            if (wsReconnectTimer) {
+                clearTimeout(wsReconnectTimer);
+                wsReconnectTimer = null;
+            }
             
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             ws = new WebSocket(`${protocol}//${window.location.host}/ws/${currentUser.id}`);
+
+            ws.onopen = () => setStatus('Connected', 'online');
             
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
@@ -943,7 +955,14 @@
             };
             
             ws.onerror = () => setStatus('Connection error', 'offline');
-            ws.onclose = () => setStatus('Disconnected', 'offline');
+            ws.onclose = () => {
+                setStatus('Disconnected', 'offline');
+                if (currentUser) {
+                    wsReconnectTimer = setTimeout(() => {
+                        connectWebSocket();
+                    }, 1500);
+                }
+            };
         }
 
         // Load users
@@ -1023,19 +1042,68 @@
             }
         }
 
+        async function sendMessageViaHttp(content) {
+            const response = await fetch(`${apiBase}/api/messages?sender_id=${currentUser.id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    receiver_id: selectedUser.id,
+                    content
+                })
+            });
+
+            if (!response.ok) {
+                const errorPayload = await response.json().catch(() => ({}));
+                throw new Error(errorPayload.detail || 'Failed to send message');
+            }
+
+            const result = await response.json();
+            const optimisticMessage = {
+                id: result.message_id,
+                sender_id: currentUser.id,
+                receiver_id: selectedUser.id,
+                sender_username: currentUser.username,
+                content,
+                created_at: Date.now(),
+                timestamp: Date.now(),
+                reactions: []
+            };
+
+            const isSameConversationOpen = selectedUser && selectedUser.id === optimisticMessage.receiver_id;
+            if (isSameConversationOpen) {
+                displayMessage(optimisticMessage, false);
+            }
+        }
+
         // Send message
-        function sendMessage() {
+        async function sendMessage() {
             const input = document.getElementById('message-input');
             const content = input.value.trim();
             
-            if (!content || !selectedUser || !ws) return;
-            
-            ws.send(JSON.stringify({
-                content,
-                receiver_id: selectedUser.id
-            }));
-            
+            if (!content || !selectedUser || !currentUser) return;
+
             input.value = '';
+
+            const canUseWebSocket = ws && ws.readyState === WebSocket.OPEN;
+
+            if (canUseWebSocket) {
+                try {
+                    ws.send(JSON.stringify({
+                        content,
+                        receiver_id: selectedUser.id
+                    }));
+                    return;
+                } catch (error) {
+                    console.error('WebSocket send failed, falling back to HTTP:', error);
+                }
+            }
+
+            try {
+                await sendMessageViaHttp(content);
+            } catch (error) {
+                input.value = content;
+                alert(`Failed to send message: ${error.message}`);
+            }
         }
 
         // Display message
