@@ -976,9 +976,11 @@
                 
                 const container = document.getElementById('users-list');
                 container.innerHTML = '';
+                let hasChatPartners = false;
                 
                 users.forEach(user => {
                     if (currentUser && user.id !== currentUser.id) {
+                        hasChatPartners = true;
                         const div = document.createElement('div');
                         div.className = `user-item ${selectedUser?.id === user.id ? 'active' : ''}`;
                         div.textContent = user.username;
@@ -986,6 +988,13 @@
                         container.appendChild(div);
                     }
                 });
+
+                if (currentUser && !hasChatPartners) {
+                    const empty = document.createElement('div');
+                    empty.className = 'form-hint';
+                    empty.textContent = 'No users yet. Ask another user to login/register first.';
+                    container.appendChild(empty);
+                }
             } catch (error) {
                 console.error('Error loading users:', error);
             }
@@ -1080,7 +1089,19 @@
             const input = document.getElementById('message-input');
             const content = input.value.trim();
             
-            if (!content || !selectedUser || !currentUser) return;
+            if (!currentUser) {
+                alert('Please login first.');
+                return;
+            }
+
+            if (!selectedUser) {
+                alert('Select a user to chat first.');
+                return;
+            }
+
+            if (!content) {
+                return;
+            }
 
             input.value = '';
 
