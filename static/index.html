@@ -651,7 +651,13 @@
                 dateObj = new Date(timestamp);
             }
             
-            const time = dateObj.toLocaleTimeString();
+            const time = new Intl.DateTimeFormat('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false,
+                timeZone: 'Asia/Bishkek'
+            }).format(dateObj);
             div.innerHTML = `
                 <div class="message-sender">${msg.sender_username}</div>
                 ${msg.content}
