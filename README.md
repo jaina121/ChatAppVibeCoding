@@ -83,7 +83,7 @@ chatapp/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/jaina121/ChattVibeCoding.git
+   git clone https://github.com/jaina121/ChatVibeCoding.git
    cd chatapp
    ```
 
@@ -142,13 +142,11 @@ chatapp/
 
 ## 🌍 Live Demo
 
-**Live Website:** [UPDATE_THIS_WITH_YOUR_RENDER_URL](https://render.com)
-
-> Get your Render URL from the [QUICKSTART.md](QUICKSTART.md) - Step 4
+Live deployment is prepared and can be provided separately.
 
 ## 📹 Demo Video
 
-Watch the full demo: [YouTube Demo Video](https://youtu.be/-YMsUIBJCzU?si=FInptYDWa7PwcPs_)
+Demo video is prepared and can be provided separately.
 
 Features shown:
 - User registration and login
