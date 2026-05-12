@@ -7,6 +7,7 @@ import json
 import os
 from datetime import datetime
 import sqlite3
+import time
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -209,17 +210,26 @@ async def get_messages(user_id: Optional[int] = None, search: Optional[str] = No
     messages = cursor.fetchall()
     conn.close()
     
-    return [
-        {
+    # Convert DB timestamp to Unix timestamp in milliseconds
+    result = []
+    for m in messages:
+        # Parse the ISO format timestamp from SQLite and convert to Unix timestamp (ms)
+        try:
+            dt = datetime.fromisoformat(m[4])
+            timestamp_ms = int(dt.timestamp() * 1000)
+        except:
+            # Fallback: use current time if parsing fails
+            timestamp_ms = int(time.time() * 1000)
+        
+        result.append({
             "id": m[0],
             "sender_id": m[1],
             "receiver_id": m[2],
             "content": m[3],
-            "created_at": m[4] + "Z",  # Add UTC indicator
+            "created_at": timestamp_ms,
             "sender_username": m[5]
-        }
-        for m in messages
-    ]
+        })
+    return result
 
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
@@ -246,13 +256,16 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
             username = cursor.fetchone()[0]
             conn.close()
             
+            # Use Unix timestamp in milliseconds (timezone-independent)
+            timestamp_ms = int(time.time() * 1000)
+            
             await manager.broadcast({
                 "type": "message",
                 "sender_id": user_id,
                 "sender_username": username,
                 "receiver_id": msg_data.get("receiver_id"),
                 "content": msg_data.get("content"),
-                "timestamp": datetime.now().isoformat() + "Z"  # Add UTC indicator
+                "timestamp": timestamp_ms
             })
     except:
         manager.disconnect(user_id)

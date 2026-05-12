@@ -545,7 +545,18 @@
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 if (data.type === 'message') {
-                    displayMessage(data, false);
+                    // Only display incoming WS messages if they belong to the currently open conversation
+                    const isRelevantConversation = selectedUser && (
+                        (data.sender_id === currentUser.id && data.receiver_id === selectedUser.id) ||
+                        (data.sender_id === selectedUser.id && data.receiver_id === currentUser.id)
+                    );
+
+                    if (isRelevantConversation) {
+                        displayMessage(data, false);
+                    } else {
+                        // Message for another conversation — ignore or handle notifications here
+                        console.log('WS message for other conversation; ignoring in current view.', data);
+                    }
                 }
             };
             
@@ -590,7 +601,10 @@
             try {
                 const response = await fetch(`${apiBase}/api/messages`);
                 const messages = await response.json();
-                
+
+                // Ensure messages are shown oldest -> newest
+                messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
                 messages.forEach(msg => {
                     if ((msg.sender_id === currentUser.id && msg.receiver_id === user.id) ||
                         (msg.sender_id === user.id && msg.receiver_id === currentUser.id)) {
@@ -625,7 +639,19 @@
             const isSent = msg.sender_id === currentUser.id;
             div.className = `message ${isSent ? 'sent' : 'received'}`;
             
-            const time = new Date(msg.created_at || msg.timestamp).toLocaleTimeString();
+            // Handle both Unix timestamp (ms) and ISO string formats
+            const timestamp = msg.created_at || msg.timestamp;
+            let dateObj;
+            
+            if (typeof timestamp === 'number') {
+                // Unix timestamp in milliseconds (from API or WebSocket)
+                dateObj = new Date(timestamp);
+            } else {
+                // ISO string format (legacy)
+                dateObj = new Date(timestamp);
+            }
+            
+            const time = dateObj.toLocaleTimeString();
             div.innerHTML = `
                 <div class="message-sender">${msg.sender_username}</div>
                 ${msg.content}
