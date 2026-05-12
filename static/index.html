@@ -639,25 +639,7 @@
             const isSent = msg.sender_id === currentUser.id;
             div.className = `message ${isSent ? 'sent' : 'received'}`;
             
-            // Handle both Unix timestamp (ms) and ISO string formats
-            const timestamp = msg.created_at || msg.timestamp;
-            let dateObj;
-            
-            if (typeof timestamp === 'number') {
-                // Unix timestamp in milliseconds (from API or WebSocket)
-                dateObj = new Date(timestamp);
-            } else {
-                // ISO string format (legacy)
-                dateObj = new Date(timestamp);
-            }
-            
-            const time = new Intl.DateTimeFormat('ru-RU', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false,
-                timeZone: 'Asia/Bishkek'
-            }).format(dateObj);
+            const time = formatMessageTime(msg.created_at || msg.timestamp);
             div.innerHTML = `
                 <div class="message-sender">${msg.sender_username}</div>
                 ${msg.content}
@@ -666,6 +648,18 @@
             
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
+        }
+
+        // Format message time in a fixed timezone so relogin does not change the displayed hour
+        function formatMessageTime(timestamp) {
+            const dateObj = new Date(Number(timestamp));
+            return new Intl.DateTimeFormat('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false,
+                timeZone: 'Asia/Bishkek'
+            }).format(dateObj);
         }
 
         // Search users

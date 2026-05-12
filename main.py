@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 import sqlite3
 import time
 from pydantic import BaseModel
@@ -41,40 +41,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-
-def migrate_legacy_message_timestamps():
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT id, created_at FROM messages")
-    rows = cursor.fetchall()
-
-    for message_id, raw_created_at in rows:
-        if isinstance(raw_created_at, int):
-            continue
-
-        timestamp_ms = None
-        raw_value = str(raw_created_at)
-
-        try:
-            dt = datetime.strptime(raw_value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
-            timestamp_ms = int(dt.timestamp() * 1000)
-        except:
-            try:
-                dt = datetime.fromisoformat(raw_value.replace("Z", "+00:00"))
-                if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
-                timestamp_ms = int(dt.timestamp() * 1000)
-            except:
-                continue
-
-        cursor.execute(
-            "UPDATE messages SET created_at = ? WHERE id = ?",
-            (timestamp_ms, message_id)
-        )
-
-    conn.commit()
-    conn.close()
 
 # Models
 class User(BaseModel):
@@ -129,7 +95,6 @@ manager = ConnectionManager()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
-    migrate_legacy_message_timestamps()
     yield
 
 # FastAPI app
@@ -198,11 +163,10 @@ async def get_users(search: Optional[str] = Query(None)):
 async def send_message(sender_id: int, message: Message):
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    timestamp_ms = int(time.time() * 1000)
     
     cursor.execute(
-        "INSERT INTO messages (sender_id, receiver_id, content, created_at) VALUES (?, ?, ?, ?)",
-        (sender_id, message.receiver_id, message.content, timestamp_ms)
+        "INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
+        (sender_id, message.receiver_id, message.content)
     )
     conn.commit()
     msg_id = cursor.lastrowid
@@ -220,7 +184,7 @@ async def send_message(sender_id: int, message: Message):
         "sender_username": sender,
         "receiver_id": message.receiver_id,
         "content": message.content,
-        "timestamp": timestamp_ms
+        "timestamp": datetime.now().isoformat()
     })
     
     return {"status": "ok", "message_id": msg_id}
@@ -247,34 +211,17 @@ async def get_messages(user_id: Optional[int] = None, search: Optional[str] = No
     messages = cursor.fetchall()
     conn.close()
     
-    # Convert DB timestamp to Unix timestamp in milliseconds
-    result = []
-    for m in messages:
-        raw_created_at = m[4]
-
-        if isinstance(raw_created_at, int):
-            timestamp_ms = raw_created_at
-        else:
-            try:
-                # Handle legacy string timestamps stored before the fix
-                dt = datetime.strptime(raw_created_at, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
-                timestamp_ms = int(dt.timestamp() * 1000)
-            except:
-                try:
-                    dt = datetime.fromisoformat(str(raw_created_at).replace("Z", "+00:00"))
-                    timestamp_ms = int(dt.timestamp() * 1000)
-                except:
-                    timestamp_ms = int(time.time() * 1000)
-        
-        result.append({
+    return [
+        {
             "id": m[0],
             "sender_id": m[1],
             "receiver_id": m[2],
             "content": m[3],
-            "created_at": timestamp_ms,
+            "created_at": int(m[4]),
             "sender_username": m[5]
-        })
-    return result
+        }
+        for m in messages
+    ]
 
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
@@ -287,10 +234,9 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
             # Save message to database
             conn = sqlite3.connect(DATABASE)
             cursor = conn.cursor()
-            timestamp_ms = int(time.time() * 1000)
             cursor.execute(
-                "INSERT INTO messages (sender_id, receiver_id, content, created_at) VALUES (?, ?, ?, ?)",
-                (user_id, msg_data.get("receiver_id"), msg_data.get("content"), timestamp_ms)
+                "INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
+                (user_id, msg_data.get("receiver_id"), msg_data.get("content"))
             )
             conn.commit()
             conn.close()
@@ -308,7 +254,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
                 "sender_username": username,
                 "receiver_id": msg_data.get("receiver_id"),
                 "content": msg_data.get("content"),
-                "timestamp": timestamp_ms
+                "timestamp": datetime.now().isoformat()
             })
     except:
         manager.disconnect(user_id)
