@@ -80,6 +80,89 @@
             background: #f0f0f0;
         }
 
+        /* Login/Logout Styles */
+        .user-session {
+            padding: 15px;
+            background: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .user-session.active {
+            display: flex;
+        }
+
+        .user-info {
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .logout-btn {
+            padding: 8px 15px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 15px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .login-form.hidden {
+            display: none;
+        }
+
+        .login-form input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 13px;
+        }
+
+        .login-form button {
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: opacity 0.2s;
+        }
+
+        .login-form button:hover {
+            opacity: 0.9;
+        }
+
+        .form-hint {
+            font-size: 11px;
+            color: #666;
+            text-align: center;
+            margin-top: -5px;
+        }
+
         .search-box {
             padding: 10px;
             border-bottom: 1px solid #ddd;
@@ -284,11 +367,25 @@
         <div class="sidebar">
             <div class="sidebar-header">
                 <h2>💬 ChatApp</h2>
-                <form class="register-form" onsubmit="registerUser(event)">
+            </div>
+            
+            <!-- Login Section - Shows when not logged in -->
+            <div class="login-form" id="login-section">
+                <form onsubmit="handleAuthForm(event)">
                     <input type="text" id="username-input" placeholder="Username" required>
-                    <button type="submit">Join</button>
+                    <button type="submit" id="auth-btn">Login</button>
+                    <div class="form-hint" id="form-hint">Press Join to login or register</div>
                 </form>
             </div>
+            
+            <!-- User Session Section - Shows when logged in -->
+            <div class="user-session" id="user-session">
+                <div class="user-info">
+                    👤 <span id="current-username"></span>
+                </div>
+                <button class="logout-btn" onclick="logoutUser()">Logout</button>
+            </div>
+            
             <div class="search-box">
                 <input type="text" id="search-users" placeholder="Search users...">
             </div>
@@ -314,31 +411,128 @@
         let ws = null;
         const apiBase = window.location.origin;
 
-        // Register user
-        async function registerUser(e) {
-            e.preventDefault();
-            const username = document.getElementById('username-input').value;
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Try to restore session from localStorage
+            restoreSession();
             
+            // If no session, show login form
+            if (!currentUser) {
+                showLoginForm();
+            } else {
+                showUserSession();
+                connectWebSocket();
+                loadUsers();
+                setStatus('Connected', 'online');
+            }
+        });
+
+        // Restore session from localStorage
+        function restoreSession() {
+            const savedUser = localStorage.getItem('chatappUser');
+            if (savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    console.log('Session restored for:', currentUser.username);
+                } catch (e) {
+                    console.error('Failed to restore session:', e);
+                    localStorage.removeItem('chatappUser');
+                }
+            }
+        }
+
+        // Save session to localStorage
+        function saveSession(user) {
+            localStorage.setItem('chatappUser', JSON.stringify(user));
+        }
+
+        // Show login form
+        function showLoginForm() {
+            document.getElementById('login-section').classList.remove('hidden');
+            document.getElementById('user-session').classList.remove('active');
+            document.getElementById('username-input').value = '';
+            document.getElementById('username-input').focus();
+        }
+
+        // Show user session
+        function showUserSession() {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('user-session').classList.add('active');
+            document.getElementById('current-username').textContent = currentUser.username;
+        }
+
+        // Handle both login and registration
+        async function handleAuthForm(e) {
+            e.preventDefault();
+            const username = document.getElementById('username-input').value.trim();
+            
+            if (!username) {
+                alert('Please enter a username');
+                return;
+            }
+
             try {
-                const response = await fetch(`${apiBase}/api/users/register`, {
+                // First try to login (user exists)
+                let response = await fetch(`${apiBase}/api/users/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username })
                 });
-                
+
                 if (response.ok) {
+                    // User exists - login
                     const user = await response.json();
-                    currentUser = user;
-                    document.getElementById('username-input').value = '';
-                    connectWebSocket();
-                    loadUsers();
-                    setStatus('Connected', 'online');
+                    loginUser(user);
+                } else if (response.status === 401) {
+                    // User doesn't exist - try to register
+                    response = await fetch(`${apiBase}/api/users/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username })
+                    });
+
+                    if (response.ok) {
+                        const user = await response.json();
+                        loginUser(user);
+                    } else {
+                        alert('This username is taken. Please try another.');
+                    }
                 } else {
-                    alert('Username already exists');
+                    alert('Error: ' + (await response.json()).detail);
                 }
             } catch (error) {
-                alert('Error registering: ' + error.message);
+                alert('Error: ' + error.message);
             }
+        }
+
+        // Login user (after checking if exists or registering)
+        function loginUser(user) {
+            currentUser = user;
+            saveSession(user);  // Save to localStorage
+            document.getElementById('username-input').value = '';
+            showUserSession();
+            connectWebSocket();
+            loadUsers();
+            setStatus('Connected', 'online');
+            console.log('User logged in:', user.username);
+        }
+
+        // Logout user
+        function logoutUser() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            
+            currentUser = null;
+            selectedUser = null;
+            localStorage.removeItem('chatappUser');
+            document.getElementById('messages-container').innerHTML = '';
+            document.getElementById('chat-title').textContent = 'Select a user to chat';
+            document.getElementById('input-section').style.display = 'none';
+            showLoginForm();
+            setStatus('Not connected', 'offline');
+            console.log('User logged out');
         }
 
         // Connect WebSocket
@@ -385,7 +579,7 @@
             }
         }
 
-        // Select user
+        // Select user for chat
         async function selectUser(user) {
             selectedUser = user;
             document.getElementById('chat-title').textContent = `Chat with ${user.username}`;

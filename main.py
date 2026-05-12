@@ -125,6 +125,23 @@ async def register_user(user: User):
     finally:
         conn.close()
 
+@app.post("/api/users/login", response_model=UserResponse)
+async def login_user(user: User):
+    """Login endpoint - finds existing user by username"""
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("SELECT id, username FROM users WHERE username = ?", (user.username,))
+        result = cursor.fetchone()
+        
+        if result:
+            return {"id": result[0], "username": result[1]}
+        else:
+            raise HTTPException(status_code=401, detail="User not found")
+    finally:
+        conn.close()
+
 @app.get("/api/users", response_model=List[UserResponse])
 async def get_users(search: Optional[str] = Query(None)):
     conn = sqlite3.connect(DATABASE)
