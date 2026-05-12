@@ -67,20 +67,21 @@ class Message(BaseModel):
     content: str
     receiver_id: Optional[int] = None
 
-class MessageResponse(BaseModel):
-    id: int
-    sender_id: int
-    receiver_id: Optional[int]
-    content: str
-    created_at: str
-    sender_username: str
-    reactions: List["MessageReactionResponse"] = Field(default_factory=list)
-
 
 class MessageReactionResponse(BaseModel):
     user_id: int
     reaction: str
     created_at: int
+
+
+class MessageResponse(BaseModel):
+    id: int
+    sender_id: int
+    receiver_id: Optional[int]
+    content: str
+    created_at: int
+    sender_username: str
+    reactions: List[MessageReactionResponse] = Field(default_factory=list)
 
 
 class MessageReactionRequest(BaseModel):
