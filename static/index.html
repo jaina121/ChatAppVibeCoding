@@ -410,6 +410,7 @@
         let selectedUser = null;
         let ws = null;
         const apiBase = window.location.origin;
+        const conversationCacheKey = 'chatappConversationHistory';
 
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', () => {
@@ -444,6 +445,55 @@
         // Save session to localStorage
         function saveSession(user) {
             localStorage.setItem('chatappUser', JSON.stringify(user));
+        }
+
+        function getConversationKey(userAId, userBId) {
+            return [userAId, userBId].sort((a, b) => a - b).join('_');
+        }
+
+        function loadConversationCache() {
+            try {
+                return JSON.parse(localStorage.getItem(conversationCacheKey) || '{}');
+            } catch (e) {
+                console.error('Failed to load conversation cache:', e);
+                return {};
+            }
+        }
+
+        function saveConversationCache(cache) {
+            localStorage.setItem(conversationCacheKey, JSON.stringify(cache));
+        }
+
+        function cacheConversationMessage(message) {
+            if (!currentUser || !message || message.sender_id == null || message.receiver_id == null) {
+                return;
+            }
+
+            const conversationKey = getConversationKey(message.sender_id, message.receiver_id);
+            const cache = loadConversationCache();
+            cache[conversationKey] = cache[conversationKey] || [];
+
+            const alreadyExists = cache[conversationKey].some((item) =>
+                item.id && message.id && item.id === message.id
+            );
+
+            if (!alreadyExists) {
+                cache[conversationKey].push({
+                    id: message.id || `${message.sender_id}_${message.receiver_id}_${message.created_at || message.timestamp}`,
+                    sender_id: message.sender_id,
+                    receiver_id: message.receiver_id,
+                    content: message.content,
+                    created_at: message.created_at || message.timestamp,
+                    sender_username: message.sender_username
+                });
+                saveConversationCache(cache);
+            }
+        }
+
+        function renderConversationMessages(messages) {
+            const container = document.getElementById('messages-container');
+            container.innerHTML = '';
+            messages.forEach((msg) => displayMessage(msg, true));
         }
 
         // Show login form
@@ -595,7 +645,15 @@
             selectedUser = user;
             document.getElementById('chat-title').textContent = `Chat with ${user.username}`;
             document.getElementById('input-section').style.display = 'flex';
+            const conversationKey = getConversationKey(currentUser.id, user.id);
+            const cache = loadConversationCache();
+            const cachedMessages = cache[conversationKey] || [];
+
             document.getElementById('messages-container').innerHTML = '';
+
+            if (cachedMessages.length > 0) {
+                renderConversationMessages(cachedMessages.slice().sort((a, b) => Number(a.created_at || a.timestamp) - Number(b.created_at || b.timestamp)));
+            }
             
             // Load chat history
             try {
@@ -605,12 +663,18 @@
                 // Ensure messages are shown oldest -> newest
                 messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
+                const conversationMessages = [];
+
                 messages.forEach(msg => {
                     if ((msg.sender_id === currentUser.id && msg.receiver_id === user.id) ||
                         (msg.sender_id === user.id && msg.receiver_id === currentUser.id)) {
+                        conversationMessages.push(msg);
                         displayMessage(msg, true);
                     }
                 });
+
+                cache[conversationKey] = conversationMessages;
+                saveConversationCache(cache);
             } catch (error) {
                 console.error('Error loading messages:', error);
             }
@@ -648,6 +712,8 @@
             
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
+
+            cacheConversationMessage(msg);
         }
 
         // Format message time in a fixed timezone so relogin does not change the displayed hour
