@@ -41,6 +41,41 @@ def init_db():
     conn.commit()
     conn.close()
 
+
+def migrate_legacy_message_timestamps():
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id, created_at FROM messages")
+    rows = cursor.fetchall()
+
+    for message_id, raw_created_at in rows:
+        if isinstance(raw_created_at, int):
+            continue
+
+        timestamp_ms = None
+        raw_value = str(raw_created_at)
+
+        try:
+            dt = datetime.strptime(raw_value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+            timestamp_ms = int(dt.timestamp() * 1000)
+        except:
+            try:
+                dt = datetime.fromisoformat(raw_value.replace("Z", "+00:00"))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                timestamp_ms = int(dt.timestamp() * 1000)
+            except:
+                continue
+
+        cursor.execute(
+            "UPDATE messages SET created_at = ? WHERE id = ?",
+            (timestamp_ms, message_id)
+        )
+
+    conn.commit()
+    conn.close()
+
 # Models
 class User(BaseModel):
     username: str
@@ -94,6 +129,7 @@ manager = ConnectionManager()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    migrate_legacy_message_timestamps()
     yield
 
 # FastAPI app
